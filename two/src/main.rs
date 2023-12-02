@@ -13,6 +13,26 @@ struct Game {
     cube_sets: Vec<CubeSet>,
 }
 
+impl FromStr for CubeSet {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let elements = s.split(", ");
+        let mut cube_set = CubeSet::default();
+        for element in elements {
+            let (many, color) = element.split_once(' ').unwrap();
+            let many = many.parse::<usize>().unwrap();
+            match color {
+                "blue" => cube_set.blue += many,
+                "green" => cube_set.green += many,
+                "red" => cube_set.red += many,
+                _ => {}
+            }
+        }
+        return Ok(cube_set);
+    }
+}
+
 impl FromStr for Game {
     type Err = Box<dyn Error>;
 
@@ -22,21 +42,7 @@ impl FromStr for Game {
         let game_id = game_id.split(' ').last().unwrap().parse::<usize>()?;
         let cube_sets = cube_sets
             .split("; ")
-            .map(|cube_set| {
-                let elements = cube_set.split(", ");
-                let mut cube_set = CubeSet::default();
-                for element in elements {
-                    let (many, color) = element.split_once(' ').unwrap();
-                    let many = many.parse::<usize>().unwrap();
-                    match color {
-                        "blue" => cube_set.blue += many,
-                        "green" => cube_set.green += many,
-                        "red" => cube_set.red += many,
-                        _ => {}
-                    }
-                }
-                return cube_set;
-            })
+            .map(|cube_set| cube_set.parse::<CubeSet>().unwrap())
             .collect::<Vec<_>>();
 
         return Ok(Game {
@@ -46,13 +52,12 @@ impl FromStr for Game {
     }
 }
 
-const MAX_CUBE_SET: CubeSet = CubeSet {
-    red: 12,
-    green: 13,
-    blue: 14,
-};
-
 fn first_solution(input: &str) -> usize {
+    const MAX_CUBE_SET: CubeSet = CubeSet {
+        red: 12,
+        green: 13,
+        blue: 14,
+    };
     return input
         .split('\n')
         .filter(|line| !line.is_empty())
@@ -77,19 +82,12 @@ fn second_solution(input: &str) -> usize {
         .map(|line| line.parse::<Game>().unwrap())
         .map(|game| {
             return game.cube_sets.iter().fold((0, 0, 0), |acc, cube_set| {
-                let (mut min_red, mut min_green, mut min_blue) = acc;
-
-                if cube_set.red > min_red {
-                    min_red = cube_set.red;
-                }
-                if cube_set.green > min_green {
-                    min_green = cube_set.green;
-                }
-                if cube_set.blue > min_blue {
-                    min_blue = cube_set.blue;
-                }
-
-                return (min_red, min_green, min_blue);
+                let (min_red, min_green, min_blue) = acc;
+                return (
+                    cube_set.red.max(min_red),
+                    cube_set.green.max(min_green),
+                    cube_set.blue.max(min_blue),
+                );
             });
         })
         .fold(0, |acc, (red, green, blue)| acc + (red * green * blue));

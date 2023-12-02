@@ -1,13 +1,13 @@
 use std::error::Error;
 
-trait Calibratable {
-    fn convert_words_to_digits(&self) -> String;
-    fn get_last_digit_from_worded_number(&self) -> Option<char>;
-    fn get_calibration_value(&self) -> i32;
+trait Trebuchet {
+    fn map_words_to_digits(&self) -> String;
+    fn word_to_digit(&self) -> Option<char>;
+    fn calibration(&self) -> i32;
 }
 
-impl Calibratable for str {
-    fn get_last_digit_from_worded_number(&self) -> Option<char> {
+impl Trebuchet for str {
+    fn word_to_digit(&self) -> Option<char> {
         if self.len() < 3 {
             return None;
         }
@@ -21,54 +21,37 @@ impl Calibratable for str {
             "seven" => Some('7'),
             "eight" => Some('8'),
             "nine" => Some('9'),
-            s => s
-                .chars()
-                .skip(1)
-                .collect::<String>()
-                .get_last_digit_from_worded_number(),
+            s => s.chars().skip(1).collect::<String>().word_to_digit(),
         };
     }
-    fn convert_words_to_digits(&self) -> String {
+    fn map_words_to_digits(&self) -> String {
         let mut buf = String::new();
         let mut new_str = String::new();
 
         for c in self.chars() {
             buf.push(c);
-
-            let buf_snapshot = buf.clone();
-            let digit = buf_snapshot.get_last_digit_from_worded_number();
-
-            let aggregate = if let Some(digit) = digit {
-                Some(digit)
-            } else if c.is_digit(10) {
-                Some(c)
-            } else {
-                None
-            };
-
-            if let Some(aggregate) = aggregate {
-                buf.clear();
-                buf.push(buf_snapshot.chars().last().unwrap());
-                new_str.push(aggregate);
-            }
+            buf.word_to_digit()
+                .or(if c.is_digit(10) { Some(c) } else { None })
+                .map(|digit| {
+                    let last_char = buf.chars().last().unwrap();
+                    buf.clear();
+                    buf.push(last_char);
+                    new_str.push(digit);
+                });
         }
         return new_str;
     }
 
-    fn get_calibration_value(&self) -> i32 {
+    fn calibration(&self) -> i32 {
         self.chars()
+            .filter(|c| c.is_digit(10))
             .fold(String::new(), |mut acc, c| {
-                if !c.is_digit(10) {
-                    return acc;
-                }
                 if acc.len() <= 1 {
                     acc.push(c);
                     return acc;
                 }
-                let mut new_acc = String::new();
-                new_acc.push(acc.chars().rev().last().unwrap());
-                new_acc.push(c);
-                return new_acc;
+                let last_digit = acc.chars().rev().last().unwrap();
+                return format!("{last_digit}{c}");
             })
             .parse::<i32>()
             .map(|num| {
@@ -85,15 +68,15 @@ fn first_solution(input: &str) -> i32 {
     return input
         .split('\n')
         .filter(|line| !line.is_empty())
-        .fold(0, |sum, line| sum + line.get_calibration_value());
+        .fold(0, |sum, line| sum + line.calibration());
 }
 
 fn second_solution(input: &str) -> i32 {
     return input
         .split('\n')
         .filter(|line| !line.is_empty())
-        .map(|line| line.convert_words_to_digits())
-        .fold(0, |sum, line| sum + line.get_calibration_value());
+        .map(|line| line.map_words_to_digits())
+        .fold(0, |sum, line| sum + line.calibration());
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
