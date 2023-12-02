@@ -23,27 +23,29 @@ impl Trebuchet for str {
         };
     }
     fn map_words_to_digits(&self) -> String {
-        let mut buf = String::new();
-        let mut new_str = String::new();
+        let (_, new_str) = self.chars().fold(
+            (String::default(), String::default()),
+            |(mut buf, mut new_str), c| {
+                buf.push(c);
+                buf.word_to_digit()
+                    .or(if c.is_digit(10) { Some(c) } else { None })
+                    .map(|digit| {
+                        let last_char = buf.chars().last().unwrap();
 
-        for c in self.chars() {
-            buf.push(c);
-            buf.word_to_digit()
-                .or(if c.is_digit(10) { Some(c) } else { None })
-                .map(|digit| {
-                    let last_char = buf.chars().last().unwrap();
-                    buf.clear();
-                    buf.push(last_char);
-                    new_str.push(digit);
-                });
-        }
+                        buf = last_char.to_string();
+                        new_str.push(digit)
+                    });
+                return (buf, new_str);
+            },
+        );
+
         return new_str;
     }
 
     fn calibration(&self) -> i32 {
         self.chars()
             .filter(|c| c.is_digit(10))
-            .fold(String::new(), |mut acc, c| {
+            .fold(String::default(), |mut acc, c| {
                 if acc.len() <= 1 {
                     acc.push(c);
                     return acc;
@@ -66,13 +68,14 @@ pub fn first_solution(input: &str) -> i32 {
     return input
         .split('\n')
         .filter(|line| !line.is_empty())
-        .fold(0, |sum, line| sum + line.calibration());
+        .map(|line| line.calibration())
+        .sum();
 }
 
 pub fn second_solution(input: &str) -> i32 {
     return input
         .split('\n')
         .filter(|line| !line.is_empty())
-        .map(|line| line.map_words_to_digits())
-        .fold(0, |sum, line| sum + line.calibration());
+        .map(|line| line.map_words_to_digits().calibration())
+        .sum();
 }
