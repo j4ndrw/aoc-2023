@@ -71,21 +71,42 @@ fn first_solution(input: &str) -> usize {
 }
 
 fn second_solution(input: &str) -> usize {
-    0
+    return input
+        .split('\n')
+        .filter(|line| !line.is_empty())
+        .map(|line| line.parse::<Game>().unwrap())
+        .map(|game| {
+            return game.cube_sets.iter().fold((0, 0, 0), |acc, cube_set| {
+                let (mut min_red, mut min_green, mut min_blue) = acc;
+
+                if cube_set.red > min_red {
+                    min_red = cube_set.red;
+                }
+                if cube_set.green > min_green {
+                    min_green = cube_set.green;
+                }
+                if cube_set.blue > min_blue {
+                    min_blue = cube_set.blue;
+                }
+
+                return (min_red, min_green, min_blue);
+            });
+        })
+        .fold(0, |acc, (red, green, blue)| acc + (red * green * blue));
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let part1_sample_output = first_solution(include_str!("../part1-sample.txt"));
     let part1_real_output = first_solution(include_str!("../part1-real.txt"));
 
-    // let part2_sample_output = second_solution(include_str!("../part2-sample.txt"));
-    // let part2_real_output = second_solution(include_str!("../part2-real.txt"));
+    let part2_sample_output = second_solution(include_str!("../part2-sample.txt"));
+    let part2_real_output = second_solution(include_str!("../part2-real.txt"));
 
     println!("part1-sample: {:#?}", part1_sample_output);
     println!("part1-real: {:#?}", part1_real_output);
 
-    // println!("part2-sample: {:#?}", part2_sample_output);
-    // println!("part2-real: {:#?}", part2_real_output);
+    println!("part2-sample: {:#?}", part2_sample_output);
+    println!("part2-real: {:#?}", part2_real_output);
 
     return Ok(());
 }
