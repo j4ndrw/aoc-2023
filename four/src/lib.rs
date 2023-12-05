@@ -25,26 +25,46 @@ impl ScratchCard {
         }));
     }
 
-    fn calculate_copies(
-        scratch_cards: Vec<Rc<ScratchCard>>,
-        mut aggregate: Vec<Rc<ScratchCard>>,
-    ) -> i32 {
-        for (index, scratch_card) in scratch_cards.iter().enumerate() {
+    fn calculate_copies(scratch_cards: Vec<ScratchCard>) -> i32 {
+        let mut copies = scratch_cards.iter().map(|_| 1).collect::<Vec<usize>>();
+        for (start, scratch_card) in scratch_cards.iter().enumerate() {
             let WinningNumbers(winning_numbers) = scratch_card.winning_numbers();
-            let many = winning_numbers.len();
 
-            if many == 0 {
-                continue;
-            }
-
-            for id in index..many {
-                if let Some(copy) = scratch_cards.get(id) {
-                    aggregate.push(copy.clone());
+            let next = start + 1;
+            if winning_numbers.len() > 0 {
+                for (win_index, _) in winning_numbers.iter().enumerate() {
+                    copies[next + win_index] += copies[start];
                 }
             }
         }
-        // let _ = ScratchCard::calculate_copies(aggregate.clone(), vec![]);
-        return aggregate.len() as i32;
+        return copies.into_iter().reduce(|acc, copy| acc + copy).unwrap() as i32;
+    }
+
+    // My brain hurts, so no recursion. Going full imperative on this one.
+    #[allow(dead_code)]
+    fn calculate_copies_rec(scratch_cards: Vec<Rc<ScratchCard>>, mut sum: i32) -> i32 {
+        if scratch_cards.len() == 0 {
+            return sum;
+        }
+
+        for (start, scratch_card) in scratch_cards.iter().enumerate() {
+            let WinningNumbers(winning_numbers) = scratch_card.winning_numbers();
+            if winning_numbers.len() == 0 {
+                continue;
+            }
+
+            let start = start + 1;
+            let end = start + winning_numbers.len();
+
+            if start > end || end > scratch_cards.len() {
+                continue;
+            }
+
+            let copies = scratch_cards[start..end].to_vec();
+            sum += copies.len() as i32
+                + ScratchCard::calculate_copies_rec(copies.clone(), copies.len() as i32);
+        }
+        return sum;
     }
 }
 
@@ -106,8 +126,6 @@ pub fn second_solution(input: &str) -> i32 {
             .lines()
             .filter(|line| !line.is_empty())
             .map(|line| line.parse::<ScratchCard>().unwrap())
-            .map(|scratch_card| Rc::new(scratch_card))
             .collect(),
-        vec![],
     );
 }

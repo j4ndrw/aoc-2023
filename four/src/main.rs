@@ -12,8 +12,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let part2_sample_output = second_solution(include_str!("../data/part2-sample.txt"));
     println!("part2-sample: {:#?}", part2_sample_output);
 
-    // let part2_real_output = second_solution(include_str!("../data/part2-real.txt"));
-    // println!("part2-real: {:#?}", part2_real_output);
+    let part2_real_output = second_solution(include_str!("../data/part2-real.txt"));
+    println!("part2-real: {:#?}", part2_real_output);
 
     return Ok(());
 }
