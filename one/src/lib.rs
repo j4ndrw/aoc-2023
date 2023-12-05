@@ -1,7 +1,9 @@
+use std::error::Error;
+
 trait Trebuchet {
     fn map_words_to_digits(&self) -> String;
     fn word_to_digit(&self) -> Option<char>;
-    fn calibration(&self) -> i32;
+    fn calibration(&self) -> Result<i32, Box<dyn Error>>;
 }
 
 impl Trebuchet for str {
@@ -42,8 +44,9 @@ impl Trebuchet for str {
         return new_str;
     }
 
-    fn calibration(&self) -> i32 {
-        self.chars()
+    fn calibration(&self) -> Result<i32, Box<dyn Error>> {
+        let number = self
+            .chars()
             .filter(|c| c.is_digit(10))
             .fold(String::default(), |mut acc, c| {
                 if acc.len() <= 1 {
@@ -53,29 +56,31 @@ impl Trebuchet for str {
                 let last_digit = acc.chars().rev().last().unwrap();
                 return format!("{last_digit}{c}");
             })
-            .parse::<i32>()
-            .map(|num| {
-                if num < 10 {
-                    return num * 10 + num;
-                }
-                return num;
-            })
-            .unwrap()
+            .parse::<i32>()?;
+
+        return Ok(match number < 10 {
+            true => number * 10 + number,
+            false => number,
+        });
     }
 }
 
 pub fn first_solution(input: &str) -> i32 {
     return input
-        .split('\n')
-        .filter(|line| !line.is_empty())
-        .map(|line| line.calibration())
+        .lines()
+        .filter_map(|line| match line.calibration() {
+            Ok(calibration) => Some(calibration),
+            Err(_) => None,
+        })
         .sum();
 }
 
 pub fn second_solution(input: &str) -> i32 {
     return input
-        .split('\n')
-        .filter(|line| !line.is_empty())
-        .map(|line| line.map_words_to_digits().calibration())
+        .lines()
+        .filter_map(|line| match line.map_words_to_digits().calibration() {
+            Ok(calibration) => Some(calibration),
+            Err(_) => None,
+        })
         .sum();
 }

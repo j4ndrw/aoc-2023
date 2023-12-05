@@ -1,40 +1,27 @@
-use std::{error::Error, rc::Rc, str::FromStr};
-
-type Card = i32;
+use std::{collections::HashSet, error::Error, rc::Rc, str::FromStr};
 
 const MULTIPLIER: i32 = 2;
 
+type Card = i32;
+
 #[derive(Debug)]
 struct ScratchCard {
-    targets: Vec<Card>,
-    queries: Vec<Card>,
+    targets: HashSet<Card>,
+    queries: HashSet<Card>,
 }
-
-#[derive(Debug)]
-struct WinningNumbers(Vec<Card>);
-
 impl ScratchCard {
     fn winning_numbers(&self) -> WinningNumbers {
-        // Linear search is slow, but should be fine for AoC
-        return WinningNumbers(self.queries.iter().fold(Vec::default(), |mut acc, query| {
-            if !self.targets.contains(query) {
-                return acc;
-            }
-            acc.push(*query);
-            return acc;
-        }));
+        return WinningNumbers(self.targets.intersection(&self.queries).cloned().collect());
     }
 
     fn calculate_copies(scratch_cards: Vec<ScratchCard>) -> i32 {
-        let mut copies = scratch_cards.iter().map(|_| 1).collect::<Vec<usize>>();
+        let mut copies = vec![1; scratch_cards.len()];
         for (start, scratch_card) in scratch_cards.iter().enumerate() {
-            let WinningNumbers(winning_numbers) = scratch_card.winning_numbers();
-
             let next = start + 1;
-            if winning_numbers.len() > 0 {
-                for (win_index, _) in winning_numbers.iter().enumerate() {
-                    copies[next + win_index] += copies[start];
-                }
+
+            let WinningNumbers(winning_numbers) = scratch_card.winning_numbers();
+            for (win_index, _) in winning_numbers.iter().enumerate() {
+                copies[next + win_index] += copies[start];
             }
         }
         return copies.into_iter().reduce(|acc, copy| acc + copy).unwrap() as i32;
@@ -68,6 +55,34 @@ impl ScratchCard {
     }
 }
 
+impl FromStr for ScratchCard {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.split_once(": ").unwrap().1;
+        let (queries, targets) = s.split_once(" | ").unwrap();
+        let queries = queries
+            .split(' ')
+            .map(|query| query.trim())
+            .filter_map(|query| match query.parse::<Card>() {
+                Ok(query) => Some(query),
+                Err(_) => None,
+            })
+            .collect();
+        let targets = targets
+            .split(' ')
+            .map(|target| target.trim())
+            .filter_map(|target| match target.parse::<Card>() {
+                Ok(target) => Some(target),
+                Err(_) => None,
+            })
+            .collect();
+        return Ok(ScratchCard { queries, targets });
+    }
+}
+
+#[derive(Debug)]
+struct WinningNumbers(HashSet<Card>);
 impl WinningNumbers {
     fn points(&self) -> i32 {
         let WinningNumbers(winning_numbers) = self;
@@ -85,37 +100,12 @@ impl WinningNumbers {
     }
 }
 
-impl FromStr for ScratchCard {
-    type Err = Box<dyn Error>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (_, rest) = s.split_once(": ").unwrap();
-        let (queries, targets) = rest.split_once(" | ").unwrap();
-        let queries = queries
-            .split(' ')
-            .map(|query| query.trim())
-            .filter(|query| !query.is_empty())
-            .map(|query| query.parse::<Card>().unwrap())
-            .collect();
-        let targets = targets
-            .split(' ')
-            .map(|target| target.trim())
-            .filter(|target| !target.is_empty())
-            .map(|target| target.parse::<Card>().unwrap())
-            .collect();
-        return Ok(ScratchCard { queries, targets });
-    }
-}
-
 pub fn first_solution(input: &str) -> i32 {
     return input
         .lines()
-        .filter(|line| !line.is_empty())
-        .map(|line| {
-            line.parse::<ScratchCard>()
-                .unwrap()
-                .winning_numbers()
-                .points()
+        .filter_map(|line| match line.parse::<ScratchCard>() {
+            Ok(scratch_card) => Some(scratch_card.winning_numbers().points()),
+            Err(_) => None,
         })
         .sum();
 }
@@ -124,8 +114,10 @@ pub fn second_solution(input: &str) -> i32 {
     return ScratchCard::calculate_copies(
         input
             .lines()
-            .filter(|line| !line.is_empty())
-            .map(|line| line.parse::<ScratchCard>().unwrap())
+            .filter_map(|line| match line.parse::<ScratchCard>() {
+                Ok(scratch_card) => Some(scratch_card),
+                Err(_) => None,
+            })
             .collect(),
     );
 }

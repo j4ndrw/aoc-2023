@@ -59,7 +59,7 @@ pub fn first_solution(input: &str) -> usize {
         blue: 14,
     };
     return input
-        .split('\n')
+        .lines()
         .filter(|line| !line.is_empty())
         .map(|line| line.parse::<Game>().unwrap())
         .filter(|game| {
@@ -76,7 +76,7 @@ pub fn first_solution(input: &str) -> usize {
 
 pub fn second_solution(input: &str) -> usize {
     return input
-        .split('\n')
+        .lines()
         .filter(|line| !line.is_empty())
         .map(|line| line.parse::<Game>().unwrap())
         .map(|game| {
